@@ -10,6 +10,11 @@
       <summary>Dim the screen after a period of inactivity</summary>
       <description>If the screen should be dimmed to save power when the computer is idle.</description>
     </key>
+    <key name="no-zero-brightness" type="b">
+      <default>false</default>
+      <summary>No zero brightness</summary>
+      <description>Unconditionally avoid using zero brightness level.</description>
+    </key>
     <key name="sleep-inactive-ac-timeout" type="i">
       <default>0</default>
       <summary>Sleep timeout computer when on AC</summary>

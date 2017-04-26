@@ -39,6 +39,8 @@
 #define GSD_BACKLIGHT_HELPER_EXIT_CODE_INVALID_USER		4
 #define GSD_BACKLIGHT_HELPER_EXIT_CODE_NO_DEVICES		5
 
+#define GSD_POWER_SETTINGS_SCHEMA "org.gnome.settings-daemon.plugins.power"
+
 static gboolean
 gsd_backlight_helper_write (const gchar *filename, gint value, GError **error)
 {
@@ -120,13 +122,15 @@ gsd_backlight_helper_get_max (const gchar *filename, GError **error)
 }
 
 static gint
-clamp_minimum (gint max, gint value)
+clamp_minimum (gint max, gint value, gboolean no_zero_brightness)
 {
 	gint minimum;
 	/* If the interface has less than 100 possible values, it's
 	 * likely that 0 doesn't turn the backlight off so we let 0 be
-	 * set in that case. */
-	if (max > 99)
+	 * set in that case.
+	 *
+	 * Avoid using zero brightness level by settings. */
+	if (max > 99 || no_zero_brightness == TRUE)
 		minimum = 1;
 	else
 		minimum = 0;
@@ -242,6 +246,9 @@ main (int argc, char *argv[])
 	if (set_brightness != -1) {
 		gboolean ret = FALSE;
 		gint max = gsd_backlight_helper_get_max (filename, &error);
+		GSettings *settings = g_settings_new (GSD_POWER_SETTINGS_SCHEMA);
+		gboolean no_zero_brightness = g_settings_get_int (settings,
+								  "no-zero-brightness");
 
 		if (max < 0) {
 			g_print ("%s: %s\n",
@@ -253,7 +260,7 @@ main (int argc, char *argv[])
 		}
 
 		if (type == GSD_BACKLIGHT_TYPE_RAW)
-			set_brightness = clamp_minimum (max, set_brightness);
+			set_brightness = clamp_minimum (max, set_brightness, no_zero_brightness);
 
 		ret = gsd_backlight_helper_write (filename, set_brightness, &error);
 		if (!ret) {
@@ -264,6 +271,7 @@ main (int argc, char *argv[])
 			retval = GSD_BACKLIGHT_HELPER_EXIT_CODE_ARGUMENTS_INVALID;
 			goto out;
 		}
+		g_clear_object (&settings);
 	}
 
 	/* success */
